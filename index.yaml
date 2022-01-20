@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  nodetaint:
+  - apiVersion: v2
+    appVersion: v0.0.3
+    created: "2022-01-20T11:31:13.459710657Z"
+    description: A Helm chart for nodetaint controller
+    digest: 3b96799bb5c3d6ec91dd0fd4459843a9938205d4c5d78e83aad50bbc1a3c1d10
+    name: nodetaint
+    type: application
+    urls:
+    - https://github.com/jamf/nodetaint/releases/download/nodetaint-0.1.0/nodetaint-0.1.0.tgz
+    version: 0.1.0
+generated: "2022-01-20T11:31:13.459724952Z"
