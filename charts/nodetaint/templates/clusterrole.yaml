@@ -40,4 +40,14 @@ rules:
     - get
     - list
     - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - update
+  - patch
+  - delete
 {{- end -}}
