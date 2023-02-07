@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/operator-framework/operator-lib/leader"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	core_v1 "k8s.io/api/core/v1"
@@ -237,6 +238,24 @@ func main() {
 	defer srv.Shutdown(context.Background())
 	defer close(stopCh)
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "OK\n")
+	})
+	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "OK\n")
+	})
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			logrus.Errorf("Error serving HTTP at %v: %v", opts.BindAddr, err)
+		}
+	}()
+
+	// Add leader election
+	err = leader.Become(context.TODO(), "node-taint-controller-lock")
+	if err != nil {
+		logrus.Fatalf("Failed to retry for leader lock: %v", err)
+	}
+	logrus.Infof("Successfully became leader")
 	dsHandler := func(ops string, ds *v1.DaemonSet) {
 		isHandling.Lock()
 		defer isHandling.Unlock()
@@ -343,18 +362,6 @@ func main() {
 		}
 	}
 	logrus.Infof("Number of required daemonsets is %v", len(dsList))
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "OK\n")
-	})
-	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "OK\n")
-	})
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			logrus.Errorf("Error serving HTTP at %v: %v", opts.BindAddr, err)
-		}
-	}()
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

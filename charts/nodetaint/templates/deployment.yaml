@@ -38,6 +38,10 @@ spec:
             {{- end }}
             - name: BIND_ADDRESS
               value: ":9797"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           ports:
             - name: http
               containerPort: 9797
