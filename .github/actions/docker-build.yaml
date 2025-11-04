@@ -1,0 +1,51 @@
+name: Docker build
+description: Build container image and (optionally) push it to registry
+
+inputs:
+  component_name:
+    description: Name of the component
+    required: true
+  version: 
+    description: The version to use for the container image label
+    required: true
+  ecr_repository:
+    description: ECR repository to push the container image to
+    required: false
+  push:
+    description: When true the Helm chart will be pushed to the registry
+    required: false
+    default: "false"
+  ecr_registry_id:
+    description: AWS account ID of ECR registry
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Login to ECR
+      id: login-to-ecr
+      uses: jamf/github-actions-ecr/login@v1
+      with:
+        ecr_registry_id: ${{ inputs.ecr_registry_id }}
+
+    - name: Setup Docker buildx
+      uses: docker/setup-buildx-action@v3
+
+    - id: set-tags
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.ecr_repository }}" ]; then
+          echo "tags=${{ steps.login-to-ecr.outputs.url }}/${{ inputs.component_name }}:${{ inputs.version }}" >> $GITHUB_ENV
+        else
+          echo "tags=${{ steps.login-to-ecr.outputs.url }}/${{ inputs.ecr_repository }}/${{ inputs.component_name }}:${{ inputs.version }}" >> $GITHUB_ENV
+        fi
+
+    - name: Build container image
+      uses: docker/build-push-action@v6
+      with:
+        tags: ${{ env.tags }}
+        platforms: linux/amd64,linux/arm64
+        push: ${{ inputs.push == 'true' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
