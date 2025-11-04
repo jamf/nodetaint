@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: nodetaint
+  description: Controller to manage taints for nodes in a k8s cluster
+  annotations:
+    jira/project-key: JSCCE
+    backstage.io/source-location: url:https://github.com/jamf/nodetaint
+    github.com/project-slug: jamf/nodetaint
+    backstage.io/techdocs-ref: dir:.
+    sonarqube.org/project-key: com.jamf.k8s:nodetaint
+spec:
+  type: provisioning
+  lifecycle: production
+  owner: kube-express
+  system: kubernetes-config-management

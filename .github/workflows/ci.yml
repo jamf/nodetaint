@@ -1,0 +1,50 @@
+name: CI
+
+defaults:
+  run:
+    shell: sh
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  setup:
+    name: Setup pipeline
+    runs-on: [self-hosted, jamf-ubuntu-latest]
+    outputs:
+      version: ${{ steps.version.outputs.short-sha }}
+      team: ${{ steps.team.outputs.name }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: team
+        run: echo "name=$(yq '.spec.owner' ./catalog-info.yaml | head -1)" >> $GITHUB_OUTPUT
+      - id: version
+        run: echo "short-sha=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_OUTPUT
+
+  build-image:
+    name: Build container image
+    runs-on: [ self-hosted, jamf-ubuntu-latest ]
+    needs: setup
+    steps:
+    - uses: actions/checkout@v5
+    - uses: ./.github/actions/docker-build
+      with:
+        push: ${{ github.ref_name == github.event.repository.default_branch }}
+        component_name: ${{ github.event.repository.name }}
+        version: ${{ needs.setup.outputs.version }}
+        ecr_repository: jamf/ga/internal/nodetaint
+        ecr_registry_id: ${{ secrets.AWS_ACCOUNT_ID }}
